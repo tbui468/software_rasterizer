@@ -1,12 +1,13 @@
-Write description describing number of triangles for each model
-    have this display in ui
-    Have controls displayed in ui too
+2D marching cubes
+    Use file downloaded yesterday
+    Figure out how to display .tif in renderer
+    Use custom transfer function for colors
+    Contour based on some set elevations 
+
+Citation for dataset
+    European Space Agency (2024).  <i>Copernicus Global Digital Elevation Model</i>.  Distributed by OpenTopography.  https://doi.org/10.5069/G9028PQB. Accessed 2026-06-20
 
 Make systemmd file on blog to allow restart of server when shutdown
     Crash the server to see if it restarts properly
 Deploy software renderer to thomasbui.net 
-Add cessna.obj to list of models choosable
-    have the user click on a ui button (or click keyboard key) to change model
-Add minicooper.obj to list of models choosable
 
-2D marching cubes

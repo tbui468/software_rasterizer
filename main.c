@@ -82,9 +82,7 @@ void app_init(struct app *app, uint32_t *pixels, int width, int height, const ch
 
     app->model_idx = 0;
 
-    //model_load(&app->model, model_file, texture_file, glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  &app->arena);
-    //model_load(&app->model, model_file, texture_file, glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  &app->arena);
-    model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  &g_app.arena);
+    model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f }, (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
     printf("vertices: %d\n", app->model.positions.count);
 }
 
@@ -138,13 +136,13 @@ int main(int argc, char **argv) {
             gkab_arena_reset(&g_app.arena);
             switch (g_app.model_idx) {
             case 0:
-                model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  &g_app.arena);
+                model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f }, (vec3s) { 0.0f, 0.0f, 0.0f },  &g_app.arena);
                 break;
             case 1:
-                model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  &g_app.arena);
+                model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f }, (vec3s) { 0.0f, 0.0f, 0.0f },  &g_app.arena);
                 break;
             case 2:
-                model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f },  &g_app.arena);
+                model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f }, (vec3s) { 0.0f, 10.0f, -20.0f },  &g_app.arena);
                 break;
             default:
                 assert(false);
@@ -171,8 +169,13 @@ int main(int argc, char **argv) {
                             g_app.camera.proj_view, 
                             model_mat, rotate);
 
-        ui_draw_text(&g_app.renderer, "CONTROLS", (struct cell) { 0, 0 });
         renderer_rasterize(&g_app.renderer);
+
+        char buf[16];
+        sprintf(buf, "%d TRIANGLES", g_app.model.indices.positions.count / 3);
+        ui_draw_text(&g_app.renderer, buf, (struct cell) { 16, 8 });
+        ui_draw_text(&g_app.renderer, "LEFT / RIGHT ARROWS: ROTATE MODEL", (struct cell) { 32, 8 });
+        ui_draw_text(&g_app.renderer, "UP / DOWN ARROWS: CHANGE MODEL", (struct cell) { 48, 8 });
 
         window_blit(&window);
 
@@ -235,13 +238,13 @@ void increment_model_idx(void) {
     gkab_arena_reset(&g_app.arena);
     switch (g_app.model_idx) {
     case 0:
-        model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  &g_app.arena);
+        model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
         break;
     case 1:
-        model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  &g_app.arena);
+        model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
         break;
     case 2:
-        model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f },  &g_app.arena);
+        model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 10.0f, -20.0f }, &g_app.arena);
         break;
     default:
         assert(false);
@@ -254,13 +257,13 @@ void decrement_model_idx(void) {
     gkab_arena_reset(&g_app.arena);
     switch (g_app.model_idx) {
     case 0:
-        model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  &g_app.arena);
+        model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
         break;
     case 1:
-        model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  &g_app.arena);
+        model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
         break;
     case 2:
-        model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f },  &g_app.arena);
+        model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 10.0f, -20.0f }, &g_app.arena);
         break;
     default:
         assert(false);
@@ -295,7 +298,13 @@ static void wasm_frame(void) {
                         model_mat, rotate);
 
     renderer_rasterize(&g_app.renderer);
-    ui_draw_text(&g_app.renderer, "CONTROLS", (struct cell) { 0, 0 });
+
+    char buf[16];
+    sprintf(buf, "%d TRIANGLES", g_app.model.indices.positions.count / 3);
+    ui_draw_text(&g_app.renderer, buf, (struct cell) { 16, 8 });
+    ui_draw_text(&g_app.renderer, "LEFT / RIGHT ARROWS: ROTATE MODEL", (struct cell) { 32, 8 });
+    ui_draw_text(&g_app.renderer, "UP / DOWN ARROWS: CHANGE MODEL", (struct cell) { 48, 8 });
+
     js_draw_pixels(pixels, WIDTH, HEIGHT);
 }
 

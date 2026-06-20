@@ -91,32 +91,86 @@ float compute_denom(float x, float y) {
     return d;
 }
 
+#define MAX_CLIPS 32
+
+struct vec4_clips {
+    vec4s buf[MAX_CLIPS];
+    int count;
+};
+void vec4_clips_init(struct vec4_clips *c) {
+    c->count = 0;
+}
+static void inline vec4_clips_append(struct vec4_clips *c, vec4s v) {
+    c->buf[c->count] = v;
+    c->count++;
+}
+static void inline vec4_clips_append3(struct vec4_clips *c, const vec4s *v) {
+    c->buf[c->count + 0] = *v;
+    c->buf[c->count + 1] = *(v + 1);
+    c->buf[c->count + 2] = *(v + 2);
+    c->count += 3;
+}
+struct vec3_clips {
+    vec3s buf[MAX_CLIPS];
+    int count;
+};
+void vec3_clips_init(struct vec3_clips *c) {
+    c->count = 0;
+}
+static void inline vec3_clips_append(struct vec3_clips *c, vec3s v) {
+    c->buf[c->count] = v;
+    c->count++;
+}
+static void inline vec3_clips_append3(struct vec3_clips *c, const vec3s *v) {
+    c->buf[c->count + 0] = *v;
+    c->buf[c->count + 1] = *(v + 1);
+    c->buf[c->count + 2] = *(v + 2);
+    c->count += 3;
+}
+struct vec2_clips {
+    vec2s buf[MAX_CLIPS];
+    int count;
+};
+void vec2_clips_init(struct vec2_clips *c) {
+    c->count = 0;
+}
+static void inline vec2_clips_append(struct vec2_clips *c, vec2s v) {
+    c->buf[c->count] = v;
+    c->count++;
+}
+static void inline vec2_clips_append3(struct vec2_clips *c, const vec2s *v) {
+    c->buf[c->count + 0] = *v;
+    c->buf[c->count + 1] = *(v + 1);
+    c->buf[c->count + 2] = *(v + 2);
+    c->count += 3;
+}
+
 static void inline clip_two_vertices(const vec4s *vecs, 
                        const vec2s *uvs, 
                        const vec3s *worlds, 
                        const vec3s *normals, 
                        int internal_vertex_idx, 
                        const float *deltas, 
-                       struct vec4_array *clipped_vertices, 
-                       struct vec2_array *clipped_texcoords,
-                       struct vec3_array *clipped_worldcoords,
-                       struct vec3_array *clipped_normals) {
+                       struct vec4_clips *clipped_vertices, 
+                       struct vec2_clips *clipped_texcoords,
+                       struct vec3_clips *clipped_worldcoords,
+                       struct vec3_clips *clipped_normals) {
 
     for (int i = 0; i < 3; i++) {
         float denom = compute_denom(deltas[i], deltas[internal_vertex_idx]);
         float t = i == internal_vertex_idx ? 0.0f : deltas[i] / denom;
 
         vec4s intersection = vec4_interp(vecs[internal_vertex_idx], vecs[i], t);
-        vec4_array_append(clipped_vertices, intersection);
+        vec4_clips_append(clipped_vertices, intersection);
 
         vec2s texcoord_intersection = vec2_interp(uvs[internal_vertex_idx], uvs[i], t);
-        vec2_array_append(clipped_texcoords, texcoord_intersection);
+        vec2_clips_append(clipped_texcoords, texcoord_intersection);
 
         vec3s worldcoord_intersection = vec3_interp(worlds[internal_vertex_idx], worlds[i], t);
-        vec3_array_append(clipped_worldcoords, worldcoord_intersection);
+        vec3_clips_append(clipped_worldcoords, worldcoord_intersection);
 
         vec3s normal_intersection = vec3_interp(normals[internal_vertex_idx], normals[i], t);
-        vec3_array_append(clipped_normals, normal_intersection);
+        vec3_clips_append(clipped_normals, normal_intersection);
     }
 }
 
@@ -126,10 +180,10 @@ static void inline clip_one_vertex(const vec4s *vecs,
                      const vec3s *normals, 
                      int external_vertex_idx, 
                      const float *deltas, 
-                     struct vec4_array *clipped_vertices, 
-                     struct vec2_array *clipped_texcoords,
-                     struct vec3_array *clipped_worldcoords,
-                     struct vec3_array *clipped_normals) {
+                     struct vec4_clips *clipped_vertices, 
+                     struct vec2_clips *clipped_texcoords,
+                     struct vec3_clips *clipped_worldcoords,
+                     struct vec3_clips *clipped_normals) {
     int next = (external_vertex_idx + 1) % 3;
     int next_next = (external_vertex_idx + 2) % 3;
 
@@ -140,21 +194,21 @@ static void inline clip_one_vertex(const vec4s *vecs,
     vec3s world_i0 = vec3_interp(worlds[next], worlds[external_vertex_idx], t0);
     vec3s normal_i0 = vec3_interp(normals[next], normals[external_vertex_idx], t0);
 
-    vec4_array_append(clipped_vertices, i0);
-    vec4_array_append(clipped_vertices, vecs[next]);
-    vec4_array_append(clipped_vertices, vecs[next_next]);
+    vec4_clips_append(clipped_vertices, i0);
+    vec4_clips_append(clipped_vertices, vecs[next]);
+    vec4_clips_append(clipped_vertices, vecs[next_next]);
 
-    vec2_array_append(clipped_texcoords, tex_i0);
-    vec2_array_append(clipped_texcoords, uvs[next]);
-    vec2_array_append(clipped_texcoords, uvs[next_next]);
+    vec2_clips_append(clipped_texcoords, tex_i0);
+    vec2_clips_append(clipped_texcoords, uvs[next]);
+    vec2_clips_append(clipped_texcoords, uvs[next_next]);
 
-    vec3_array_append(clipped_worldcoords, world_i0);
-    vec3_array_append(clipped_worldcoords, worlds[next]);
-    vec3_array_append(clipped_worldcoords, worlds[next_next]);
+    vec3_clips_append(clipped_worldcoords, world_i0);
+    vec3_clips_append(clipped_worldcoords, worlds[next]);
+    vec3_clips_append(clipped_worldcoords, worlds[next_next]);
 
-    vec3_array_append(clipped_normals, normal_i0);
-    vec3_array_append(clipped_normals, normals[next]);
-    vec3_array_append(clipped_normals, normals[next_next]);
+    vec3_clips_append(clipped_normals, normal_i0);
+    vec3_clips_append(clipped_normals, normals[next]);
+    vec3_clips_append(clipped_normals, normals[next_next]);
 
     float denom1 = compute_denom(deltas[external_vertex_idx], deltas[next_next]);
     float t1 = deltas[external_vertex_idx] / denom1;
@@ -163,21 +217,21 @@ static void inline clip_one_vertex(const vec4s *vecs,
     vec3s world_i1 = vec3_interp(worlds[next_next], worlds[external_vertex_idx], t1);
     vec3s normal_i1 = vec3_interp(normals[next_next], normals[external_vertex_idx], t1);
 
-    vec4_array_append(clipped_vertices, i0);
-    vec4_array_append(clipped_vertices, vecs[next_next]);
-    vec4_array_append(clipped_vertices, i1);
+    vec4_clips_append(clipped_vertices, i0);
+    vec4_clips_append(clipped_vertices, vecs[next_next]);
+    vec4_clips_append(clipped_vertices, i1);
 
-    vec2_array_append(clipped_texcoords, tex_i0);
-    vec2_array_append(clipped_texcoords, uvs[next_next]);
-    vec2_array_append(clipped_texcoords, tex_i1);
+    vec2_clips_append(clipped_texcoords, tex_i0);
+    vec2_clips_append(clipped_texcoords, uvs[next_next]);
+    vec2_clips_append(clipped_texcoords, tex_i1);
 
-    vec3_array_append(clipped_worldcoords, world_i0);
-    vec3_array_append(clipped_worldcoords, worlds[next_next]);
-    vec3_array_append(clipped_worldcoords, world_i1);
+    vec3_clips_append(clipped_worldcoords, world_i0);
+    vec3_clips_append(clipped_worldcoords, worlds[next_next]);
+    vec3_clips_append(clipped_worldcoords, world_i1);
 
-    vec3_array_append(clipped_normals, normal_i0);
-    vec3_array_append(clipped_normals, normals[next_next]);
-    vec3_array_append(clipped_normals, normal_i1);
+    vec3_clips_append(clipped_normals, normal_i0);
+    vec3_clips_append(clipped_normals, normals[next_next]);
+    vec3_clips_append(clipped_normals, normal_i1);
 }
 
 enum clip_plane_type {
@@ -230,21 +284,6 @@ static int inline get_clipped_vertices_and_deltas(const vec4s *vecs, enum clip_p
     }
 }
 
-#define MAX_CLIP_TRIANGLES 32
-
-struct vec4_clip_arr {
-    vec4s buf[MAX_CLIP_TRIANGLES];
-    int count;
-};
-struct vec3_clip_arr {
-    vec3s buf[MAX_CLIP_TRIANGLES];
-    int count;
-};
-struct vec2_clip_arr {
-    vec2s buf[MAX_CLIP_TRIANGLES];
-    int count;
-};
-
 void clip_triangle(struct renderer *r, 
                    const vec4s *vecs, 
                    const vec2s *texcoords, 
@@ -255,56 +294,58 @@ void clip_triangle(struct renderer *r,
                    struct vec3_array *clipped_worldcoords,
                    struct vec3_array *clipped_normals) {
 
-    //TODO rather than using dynamically sized array, make fixed size arrays of 32 elements
-    vec4_array_clear(&r->temps_0);
-    vec4_array_clear(&r->temps_1);
-    vec2_array_clear(&r->vec2_array_0);
-    vec2_array_clear(&r->vec2_array_1);
-    vec3_array_clear(&r->vec3_array_0);
-    vec3_array_clear(&r->vec3_array_1);
-    vec3_array_clear(&r->vec3_array_2);
-    vec3_array_clear(&r->vec3_array_3);
+    struct vec4_clips pos_clips_0;
+    vec4_clips_init(&pos_clips_0);
+    struct vec4_clips pos_clips_1;
+    vec4_clips_init(&pos_clips_1);
 
-    struct vec4_array *cur = &r->temps_0;
-    struct vec4_array *next = &r->temps_1;
-    struct vec2_array *cur_texcoords = &r->vec2_array_0;
-    struct vec2_array *next_texcoords = &r->vec2_array_1;
-    struct vec3_array *cur_worldcoords = &r->vec3_array_0;
-    struct vec3_array *next_worldcoords = &r->vec3_array_1;
-    struct vec3_array *cur_normals = &r->vec3_array_2;
-    struct vec3_array *next_normals = &r->vec3_array_3;
+    struct vec4_clips *cur = &pos_clips_0;
+    struct vec4_clips *next = &pos_clips_1;
 
+    struct vec2_clips texcoord_clips_0;
+    vec2_clips_init(&texcoord_clips_0);
+    struct vec2_clips texcoord_clips_1;
+    vec2_clips_init(&texcoord_clips_1);
+
+    struct vec2_clips *cur_texcoords = &texcoord_clips_0;
+    struct vec2_clips *next_texcoords = &texcoord_clips_1;
+
+    struct vec3_clips world_clips_0;
+    vec3_clips_init(&world_clips_0);
+    struct vec3_clips world_clips_1;
+    vec3_clips_init(&world_clips_1);
+
+    struct vec3_clips *cur_worldcoords = &world_clips_0;
+    struct vec3_clips *next_worldcoords = &world_clips_1;
+
+    struct vec3_clips normal_clips_0;
+    vec3_clips_init(&normal_clips_0);
+    struct vec3_clips normal_clips_1;
+    vec3_clips_init(&normal_clips_1);
+
+    struct vec3_clips *cur_normals = &normal_clips_0;
+    struct vec3_clips *next_normals = &normal_clips_1;
+
+    /*
     for (int i = 0; i < 3; i++) {
-        vec4_array_append(cur, vecs[i]);
-        vec2_array_append(cur_texcoords, texcoords[i]);
-        vec3_array_append(cur_worldcoords, worldcoords[i]);
-        vec3_array_append(cur_normals, normals[i]);
+        vec4_clips_append(cur, vecs[i]);
+        vec2_clips_append(cur_texcoords, texcoords[i]);
+        vec3_clips_append(cur_worldcoords, worldcoords[i]);
+        vec3_clips_append(cur_normals, normals[i]);
     }
+    */
+
+    vec4_clips_append3(cur, vecs);
+    vec2_clips_append3(cur_texcoords, texcoords);
+    vec3_clips_append3(cur_worldcoords, worldcoords);
+    vec3_clips_append3(cur_normals, normals);
 
     for (enum clip_plane_type type = CP_POS_X; type < CP_END; type++) {
         for (int i = 0; i < cur->count; i += 3) {
-            /*
-            vec4s vecs[3] = { cur->values[i + 0],
-                              cur->values[i + 1],
-                              cur->values[i + 2] };
-
-            vec2s uvs[3] = { cur_texcoords->values[i + 0],
-                             cur_texcoords->values[i + 1],
-                             cur_texcoords->values[i + 2] };
-
-            vec3s worlds[3] = { cur_worldcoords->values[i + 0],
-                                cur_worldcoords->values[i + 1],
-                                cur_worldcoords->values[i + 2] };
-
-            vec3s normals[3] = { cur_normals->values[i + 0],
-                                 cur_normals->values[i + 1],
-                                 cur_normals->values[i + 2] };
-            */
-
-            vec4s *vecs = cur->values + i;
-            vec2s *uvs = cur_texcoords->values + i;
-            vec3s *worlds = cur_worldcoords->values + i;
-            vec3s *normals = cur_normals->values + i;
+            vec4s *vecs = cur->buf + i;
+            vec2s *uvs = cur_texcoords->buf + i;
+            vec3s *worlds = cur_worldcoords->buf + i;
+            vec3s *normals = cur_normals->buf + i;
 
             float d[3];
             int outside_code = get_clipped_vertices_and_deltas(vecs, type, d);
@@ -335,12 +376,10 @@ void clip_triangle(struct renderer *r,
             case 7: //all outside plane
                 break;
             case 0: //all inside plane
-                for (int j = 0; j < 3; j++) {
-                    vec4_array_append(next, vecs[j]);
-                    vec2_array_append(next_texcoords, uvs[j]);
-                    vec3_array_append(next_worldcoords, worlds[j]);
-                    vec3_array_append(next_normals, normals[j]);
-                }
+                vec4_clips_append3(next, vecs);
+                vec2_clips_append3(next_texcoords, uvs);
+                vec3_clips_append3(next_worldcoords, worlds);
+                vec3_clips_append3(next_normals, normals);
                 break;
             default:
                 assert(false);
@@ -349,34 +388,34 @@ void clip_triangle(struct renderer *r,
         }
 
         //cleanup arrays and swap for next plane clipping iteration
-        struct vec4_array *temp = cur;
+        struct vec4_clips *temp = cur;
         cur = next;
         next = temp;
-        vec4_array_clear(next);
+        next->count = 0;
 
-        struct vec2_array *temp1 = cur_texcoords;
+        struct vec2_clips *temp1 = cur_texcoords;
         cur_texcoords = next_texcoords;
         next_texcoords = temp1;
-        vec2_array_clear(next_texcoords);
+        next_texcoords->count = 0;
 
-        struct vec3_array *temp2 = cur_worldcoords;
+        struct vec3_clips *temp2 = cur_worldcoords;
         cur_worldcoords = next_worldcoords;
         next_worldcoords = temp2;
-        vec3_array_clear(next_worldcoords);
+        next_worldcoords->count = 0;
 
-        struct vec3_array *temp3 = cur_normals;
+        struct vec3_clips *temp3 = cur_normals;
         cur_normals = next_normals;
         next_normals = temp3;
-        vec3_array_clear(next_normals);
+        next_normals->count = 0;
     }
 
     //end plane iteration loop here
     assert(cur->count == cur_texcoords->count && cur->count == cur_worldcoords->count && cur->count == cur_normals->count);
     for (int i = 0; i < cur->count; i++) {
-        vec4_array_append(clipped_vertices, cur->values[i]);
-        vec2_array_append(clipped_texcoords, cur_texcoords->values[i]);
-        vec3_array_append(clipped_worldcoords, cur_worldcoords->values[i]);
-        vec3_array_append(clipped_normals, cur_normals->values[i]);
+        vec4_array_append(clipped_vertices, cur->buf[i]);
+        vec2_array_append(clipped_texcoords, cur_texcoords->buf[i]);
+        vec3_array_append(clipped_worldcoords, cur_worldcoords->buf[i]);
+        vec3_array_append(clipped_normals, cur_normals->buf[i]);
     }
 }
 
@@ -691,27 +730,27 @@ void renderer_rasterize(struct renderer *r/*,
 
 
         //lighting for entire face computed once - flat lighting
-            vec3s norm = glms_vec3_normalize(r->clips.values[i + 0].normal); //TODO assuming all normals point in same direction for now
-            vec3s light_color = { 1.0f, 1.0f, 1.0f };
+        vec3s norm = glms_vec3_normalize(r->clips.values[i + 0].normal); //TODO assuming all normals point in same direction for now
+        vec3s light_color = { 1.0f, 1.0f, 1.0f };
 
-            vec3s to_pixel_dir = glms_vec3_normalize((vec3s) { 750.f, -1000.0f, 500.f });
-            //diffuse lighting
-            float diff = max(glms_dot(norm, to_pixel_dir), 0.0f);
-            vec3s diffuse = glms_vec3_scale(light_color, diff);
+        vec3s to_pixel_dir = glms_vec3_normalize((vec3s) { 750.f, -100.0f, 500.f });
+        //diffuse lighting
+        float diff = max(glms_dot(norm, to_pixel_dir), 0.0f);
+        vec3s diffuse = glms_vec3_scale(light_color, diff);
 
-            //TODO: use some small 
+        //TODO: use some small 
 
-            vec3s ambient = { 0.2f, 0.2f, 0.2f };
-            vec3s sums = glms_vec3_add(ambient, diffuse);
-            sums = (vec3s) { min(sums.x, 1.0f), min(sums.y, 1.0f), min(sums.z, 1.0f) }; //TODO: should scale down using max among three channels
+        vec3s ambient = { 0.2f, 0.2f, 0.2f };
+        vec3s sums = glms_vec3_add(ambient, diffuse);
+        sums = (vec3s) { min(sums.x, 1.0f), min(sums.y, 1.0f), min(sums.z, 1.0f) }; //TODO: should scale down using max among three channels
 
-            //FragColor = vec4(result, 1.0);
-            /*
-            red = (unsigned char) (result.x * 255.0f);
-            green = (unsigned char) (result.y * 255.0f);
-            blue = (unsigned char) (result.z * 255.0f);
-            */
-            //end light
+        //FragColor = vec4(result, 1.0);
+        /*
+        red = (unsigned char) (result.x * 255.0f);
+        green = (unsigned char) (result.y * 255.0f);
+        blue = (unsigned char) (result.z * 255.0f);
+        */
+        //end light
 
 
         for (int y = ymin_i; y <= ymax_i; y++) {

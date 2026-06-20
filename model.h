@@ -40,7 +40,7 @@ struct model {
     struct texture texture;
 };
 
-void mesh_load(struct model *m, const char *path, float rot, bool swap_winding, vec3s scale, struct gkab_arena *arena) {
+void mesh_load(struct model *m, const char *path, float rot, bool swap_winding, vec3s scale, vec3s translation, struct gkab_arena *arena) {
     FILE *f = fopen(path, "r");
     if (!f) {
         exit(1);
@@ -82,7 +82,9 @@ void mesh_load(struct model *m, const char *path, float rot, bool swap_winding, 
             float y = strtof(p, &p);
             float z = strtof(p, &p);
             //TODO handle possible 4th position (w)
-            vec3_array_append(&m->positions, (vec3s) { x, y, z });
+            vec3_array_append(&m->positions, (vec3s) { x + translation.x, 
+                                                       y + translation.y, 
+                                                       z + translation.z });
             break;
         }
         case 'f': {
@@ -196,6 +198,8 @@ void mesh_load(struct model *m, const char *path, float rot, bool swap_winding, 
 
     printf("%d, %d\n", m->indices.positions.count, m->indices.normals.count);
     assert(m->indices.positions.count == m->indices.normals.count);
+
+    printf("total triangles: %d\n", m->indices.positions.count / 3);
 }
 
 void texture_load(struct texture *t, const char *path) {
@@ -208,8 +212,8 @@ void texture_load(struct texture *t, const char *path) {
     }
 }
 
-void model_load(struct model *m, const char *mesh_path, const char *texture_path, float rot, bool swap_winding, vec3s scale, struct gkab_arena *arena) {
-    mesh_load(m, mesh_path, rot, swap_winding, scale, arena);
+void model_load(struct model *m, const char *mesh_path, const char *texture_path, float rot, bool swap_winding, vec3s scale, vec3s translation, struct gkab_arena *arena) {
+    mesh_load(m, mesh_path, rot, swap_winding, scale, translation, arena);
     texture_load(&m->texture, texture_path);
 }
 

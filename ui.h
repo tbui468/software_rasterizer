@@ -324,6 +324,12 @@ void init_char_map() {
                      "#    ",
                      &g_char_maps['/']);
 
+    make_char_pixels("     "
+                     "#    "
+                     "     "
+                     "     "
+                     "#    ",
+                     &g_char_maps[':']);
 }
 
 #endif 
