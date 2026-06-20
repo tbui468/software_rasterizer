@@ -1,0 +1,12 @@
+Write description describing number of triangles for each model
+    have this display in ui
+    Have controls displayed in ui too
+
+Make systemmd file on blog to allow restart of server when shutdown
+    Crash the server to see if it restarts properly
+Deploy software renderer to thomasbui.net 
+Add cessna.obj to list of models choosable
+    have the user click on a ui button (or click keyboard key) to change model
+Add minicooper.obj to list of models choosable
+
+2D marching cubes

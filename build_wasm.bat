@@ -1,0 +1,1 @@
+emcc main.c -O2 -sUSE_ES6_IMPORT_META=0 -o main.js --preload-file background.png --preload-file teapot.obj --preload-file cessna.obj --preload-file minicooper.obj --preload-file grey.png -sEXPORTED_FUNCTIONS=['_main','_set_left','_set_right','_increment_model_idx','_decrement_model_idx'] -sINITIAL_MEMORY=256MB
