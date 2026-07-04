@@ -188,7 +188,7 @@ void window_sleep(float ms) {
     Sleep((DWORD)(ms));
 }
 
-void window_init(struct window *w, int surface_width, int surface_height, int window_width, int window_height) {
+void window_init(struct window *w, int surface_width, int surface_height, int window_width, int window_height, bool top_down) {
     HINSTANCE hInstance = GetModuleHandle(NULL);
 
     STARTUPINFO si;
@@ -202,7 +202,7 @@ void window_init(struct window *w, int surface_width, int surface_height, int wi
     BITMAPINFO bmi = {0};
     bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth       = surface_width;
-    bmi.bmiHeader.biHeight      = surface_height; // top-down
+    bmi.bmiHeader.biHeight      = top_down ? -surface_height: surface_height;
     bmi.bmiHeader.biPlanes      = 1;
     bmi.bmiHeader.biBitCount    = 32;
     bmi.bmiHeader.biCompression = BI_RGB;

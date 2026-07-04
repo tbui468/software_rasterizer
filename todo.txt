@@ -1,13 +1,20 @@
-2D marching cubes
-    Use file downloaded yesterday
-    Figure out how to display .tif in renderer
-    Use custom transfer function for colors
-    Contour based on some set elevations 
+Use this 
+    https://somethingaboutmaps.wordpress.com/an-inventory-of-martian-hypsometric-tints/
+    https://somethingaboutmaps.com/
 
-Citation for dataset
-    European Space Agency (2024).  <i>Copernicus Global Digital Elevation Model</i>.  Distributed by OpenTopography.  https://doi.org/10.5069/G9028PQB. Accessed 2026-06-20
+commit to github since we made a ton of changes
 
-Make systemmd file on blog to allow restart of server when shutdown
-    Crash the server to see if it restarts properly
-Deploy software renderer to thomasbui.net 
+Put projects + research papers together
+    software rasterizer - Pineda's algorithm
+    distributed error detection - that one paper from c425 - but just talk about it and can't share code
+    distributed project from cs 484 - the two papers - talk about tools used, but can't share code
 
+Clipping can probably be significantly simplified
+    clipping along x/y planes can be done by clamping bounding box when drawing pixels (see original paper)
+    only near and far plane clipping is needed when submitting triangles
+
+    Should profile this to see if it's actually faster
+
+Using a unit cube 4x in size makes seams between triangles very clear when rotating around xy axis
+    Use this as test case to fix bug
+    look at Pineda's paper for more details on how he solved this

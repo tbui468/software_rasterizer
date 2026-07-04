@@ -1,6 +1,25 @@
 #ifndef UI_H
 #define UI_H
 
+typedef int uid;
+#define UID_NULL 0
+
+struct rect {
+    int x, y, w, h;
+};
+
+struct ui {
+    uint32_t color;
+    struct renderer *renderer;
+    struct rect hoverable;
+    uid rect_id;
+};
+
+enum color {
+    CL_BLACK = 0xFF000000,
+    CL_WHITE = 0xFFFFFFFF
+};
+
 struct char_pixels {
     uint64_t pixels;
     int width;
@@ -24,11 +43,7 @@ struct cell {
     int row, col;
 };
 
-int ui_draw_char(struct renderer *r, char c, struct cell cell) {
-    uint8_t red = 0; 
-    uint8_t green = 0; 
-    uint8_t blue = 0; 
-
+int ui_draw_char(struct ui *ui, char c, struct cell cell) {
     int max_col = 0;
 
     for (int i = 0; i < 64; i++) {
@@ -38,16 +53,17 @@ int ui_draw_char(struct renderer *r, char c, struct cell cell) {
 
         if (v == 1) {
             max_col = col > max_col ? col : max_col;
-            int px_idx = (cell.row - row) * r->width + (cell.col + col);
-            r->pixels[px_idx] = 0xFF000000 | (red << 16) | (green << 8) | (blue << 0);
+            int px_idx = (cell.row - row) * ui->renderer->width + (cell.col + col);
+            //ui->renderer->pixels[px_idx] = 0xFF000000 | (red << 16) | (green << 8) | (blue << 0);
+            ui->renderer->pixels[px_idx] = ui->color;
         }
     }
     
     return max_col + 1;
 }
 
-int ui_draw_text(struct renderer *r, const char *text, struct cell cell) {
-    cell.row = r->height - cell.row - 1;
+int ui_draw_text(struct ui *ui, const char *text, struct cell cell) {
+    cell.row = ui->renderer->height - cell.row - 1;
 
     int off = 0;
     const char *c = text;
@@ -55,7 +71,7 @@ int ui_draw_text(struct renderer *r, const char *text, struct cell cell) {
         if (*c == ' ') {
             off += 4;
         } else {
-            off += ui_draw_char(r, *c, (struct cell) { cell.row, cell.col + off });
+            off += ui_draw_char(ui, *c, (struct cell) { cell.row, cell.col + off });
             off += 1; //add space between characters
         }
         c++;
@@ -331,5 +347,81 @@ void init_char_map() {
                      "#    ",
                      &g_char_maps[':']);
 }
+
+void ui_draw_horizontal_line(struct ui *ui, int startx, int endx, int row) {
+    for (int col = startx; col < endx; col++) {
+        int px_idx = row * ui->renderer->width + col;
+        ui->renderer->pixels[px_idx] = ui->color;
+    }
+}
+
+void ui_draw_vertical_line(struct ui *ui, int starty, int endy, int col) {
+    for (int row = starty; row < endy; row++) {
+        int px_idx = row * ui->renderer->width + col;
+        ui->renderer->pixels[px_idx] = ui->color;
+    }
+}
+
+void ui_draw_rect(struct ui* ui, struct cell pos, struct cell dim) {
+    pos.row = ui->renderer->height - pos.row - 1;
+
+    {
+        int startx = pos.col;
+        int endx = pos.col + dim.col;
+        ui_draw_horizontal_line(ui, startx, endx, pos.row);
+    }
+    {
+        int startx = pos.col;
+        int endx = pos.col + dim.col;
+        ui_draw_horizontal_line(ui, startx, endx, pos.row - dim.row);
+    }
+
+    {
+        int starty = pos.row - dim.row;
+        int endy = pos.row;
+        ui_draw_vertical_line(ui, starty, endy, pos.col);
+    }
+    {
+        int starty = pos.row - dim.row;
+        int endy = pos.row;
+        ui_draw_vertical_line(ui, starty, endy, pos.col + dim.col);
+    }
+}
+
+uid ui_hovered_rects(struct ui *ui, int x, int y) {
+    y = ui->renderer->height - y - 1;
+    if (x >= ui->hoverable.x && x < ui->hoverable.x + ui->hoverable.w &&
+        y >= ui->hoverable.y && y < ui->hoverable.y + ui->hoverable.h) {
+        
+        return 1;
+    }
+
+    return UID_NULL;
+}
+
+uid ui_draw_hoverable_rect(struct ui *ui, struct cell pos, struct cell dim) {
+    ui_draw_rect(ui, pos, dim);
+    ui->hoverable.x = pos.col;
+    ui->hoverable.y = ui->renderer->height - pos.row - 1 - dim.row;
+    ui->hoverable.w = dim.col;
+    ui->hoverable.h = dim.row;
+    return 1;
+}
+
+void ui_set_color(struct ui *ui, enum color color) {
+    ui->color = color;
+}
+
+void ui_begin(struct ui *ui) {
+    ui->rect_id = UID_NULL;
+}
+
+void ui_init(struct ui *ui, struct renderer *r) {
+    ui->color = CL_BLACK;
+    ui->renderer = r;
+    init_char_map();
+    ui->rect_id = UID_NULL;
+}
+
 
 #endif 

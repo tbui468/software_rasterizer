@@ -154,7 +154,7 @@ void mesh_load(struct model *m, const char *path, float rot, bool swap_winding, 
             break;
         }
         default:
-            printf(".obj identifier '%c' not supported.\n", c);
+            //printf(".obj identifier '%c' not supported.\n", c);
             break;
         }
     }
@@ -210,15 +210,121 @@ void texture_load(struct texture *t, const char *path) {
         printf("failed to load '%s'\n", path);
         exit(1);
     }
+
+#ifdef __EMSCRIPTEN__
+    unsigned char *p = t->data;
+    for (int i = 0; i < t->width * t->height; i++) {
+        unsigned char tmp = p[0];
+        p[0] = p[2];
+        p[2] = tmp;
+        p += t->channels;
+    }
+#endif
 }
 
-void model_load(struct model *m, const char *mesh_path, const char *texture_path, float rot, bool swap_winding, vec3s scale, vec3s translation, struct gkab_arena *arena) {
+void model_load(struct model *m, 
+                const char *mesh_path, 
+                const char *texture_path, 
+                float rot, 
+                bool swap_winding, 
+                vec3s scale, 
+                vec3s translation, 
+                struct gkab_arena *arena) {
     mesh_load(m, mesh_path, rot, swap_winding, scale, translation, arena);
     texture_load(&m->texture, texture_path);
 }
 
 void model_free(struct model *m) {
     stbi_image_free(m->texture.data);
+}
+
+void model_unit_sphere(struct model *m, 
+                float rot, 
+                vec3s scale, 
+                vec3s translation, 
+                struct gkab_arena *arena) {
+
+    vec3_array_init(&m->positions, arena);
+    vec3_array_init(&m->normals, arena);
+    vec2_array_init(&m->texcoords, arena);
+    iarray_init(&m->indices.positions, arena);
+    iarray_init(&m->indices.texcoords, arena);
+    iarray_init(&m->indices.normals, arena);
+
+    const int SLICE_COUNT = 64;
+    const int STACK_COUNT = 32;
+    float step = M_PI * 2.0 / (float) SLICE_COUNT;
+    float angle = 0.0f;
+
+    float phi_step = M_PI / (float) STACK_COUNT;
+    float phi = 0.0f;
+
+    for (int j = 0; j < STACK_COUNT; j++) {
+        for (int i = 0; i < SLICE_COUNT; i++) {
+            int idx = m->positions.count;
+            {
+                //top left
+                float x = cosf(angle) * sinf(phi + phi_step);
+                float y = cosf(phi + phi_step);
+                float z = sinf(angle) * sinf(phi + phi_step);
+                vec3_array_append(&m->positions, glms_vec3_mul((vec3s) { x, y, z }, scale));
+                vec3_array_append(&m->normals, (vec3s) { x, y, z });
+                vec2_array_append(&m->texcoords, (vec2s) { angle / (2.0f * M_PI), (phi + phi_step) / M_PI });
+            }
+            {
+                //botton left
+                float x = cosf(angle) * sinf(phi);
+                float y = cosf(phi);
+                float z = sinf(angle) * sinf(phi);
+                vec3_array_append(&m->positions, glms_vec3_mul((vec3s) { x, y, z }, scale));
+                vec3_array_append(&m->normals, (vec3s) { x, y, z });
+                vec2_array_append(&m->texcoords, (vec2s) { angle / (2.0f * M_PI), phi / M_PI });
+            }
+            {
+                //top right
+                float x = cosf(angle + step) * sinf(phi + phi_step);
+                float y = cosf(phi + phi_step);
+                float z = sinf(angle + step) * sinf(phi + phi_step);
+                vec3_array_append(&m->positions, glms_vec3_mul((vec3s) { x, y, z }, scale));
+                vec3_array_append(&m->normals, (vec3s) { x, y, z });
+                vec2_array_append(&m->texcoords, (vec2s) { (angle + step) / (2.0f * M_PI), (phi + phi_step) / M_PI });
+            }
+            {
+                //botton right
+                float x = cosf(angle + step) * sinf(phi);
+                float y = cosf(phi);
+                float z = sinf(angle + step) * sinf(phi);
+                vec3_array_append(&m->positions, glms_vec3_mul((vec3s) { x, y, z }, scale));
+                vec3_array_append(&m->normals, (vec3s) { x, y, z });
+                vec2_array_append(&m->texcoords, (vec2s) { (angle + step) / (2.0f * M_PI), phi / M_PI });
+            }
+
+            iarray_append(&m->indices.positions, idx + 0);
+            iarray_append(&m->indices.positions, idx + 2);
+            iarray_append(&m->indices.positions, idx + 1);
+            iarray_append(&m->indices.positions, idx + 1);
+            iarray_append(&m->indices.positions, idx + 2);
+            iarray_append(&m->indices.positions, idx + 3);
+
+            iarray_append(&m->indices.texcoords, idx + 0);
+            iarray_append(&m->indices.texcoords, idx + 2);
+            iarray_append(&m->indices.texcoords, idx + 1);
+            iarray_append(&m->indices.texcoords, idx + 1);
+            iarray_append(&m->indices.texcoords, idx + 2);
+            iarray_append(&m->indices.texcoords, idx + 3);
+
+            iarray_append(&m->indices.normals, idx + 0);
+            iarray_append(&m->indices.normals, idx + 2);
+            iarray_append(&m->indices.normals, idx + 1);
+            iarray_append(&m->indices.normals, idx + 1);
+            iarray_append(&m->indices.normals, idx + 2);
+            iarray_append(&m->indices.normals, idx + 3);
+
+            angle += step;
+        }
+        angle = 0.0f;
+        phi += phi_step;
+    }
 }
 
 #endif //MODEL_H

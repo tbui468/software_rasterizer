@@ -446,14 +446,6 @@ void clip_triangles(struct renderer *r,
 
         for (int j = 0; j < 3; j++) {
 
-            /*
-            printf("%d, %d ,%d, indexes: %d, %d, %d\n", vertices->count, texcoords->count, normals->count, indices->positions.count, indices->texcoords.count, indices->normals.count);
-            printf("position idx: %d of %d, texcoord idx: %d of %d, normal idx: %d of %d\n", 
-                    indices->positions.values[i + j], vertices->count, 
-                    i + j, texcoords->count, 
-                    indices->normals.values[i + j], normals->count);
-            */
-
             vecs[j] = vertices->values[indices->positions.values[i + j]];
             uvs[j] = indices->texcoords.count == 0 || i + j >= indices->texcoords.count ? 
                         (vec2s) { (float) (j / 2), (float) (j % 2) } : 
@@ -787,8 +779,6 @@ void renderer_rasterize(struct renderer *r/*,
                     float indepth = z0 * inv_w0 * b0 + z1 * inv_w1 * b1 + z2 * inv_w2 * b2;
                     float inv_w = inv_w0 * b0 + inv_w1 * b1 + inv_w2 * b2;
                     float depth = indepth / inv_w;
-
-
 
                     if (r->depths[px_idx] > depth) {
                         //perspective-correct textures  TODO clean this up
