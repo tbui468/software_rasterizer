@@ -91,7 +91,7 @@ float compute_denom(float x, float y) {
     return d;
 }
 
-#define MAX_CLIPS 32
+#define MAX_CLIPS 8
 
 struct vec4_clips {
     vec4s buf[MAX_CLIPS];
@@ -235,17 +235,20 @@ static void inline clip_one_vertex(const vec4s *vecs,
 }
 
 enum clip_plane_type {
-    CP_POS_X = 0,
+    CP_NEAR_Z = 0,
+    CP_FAR_Z,
+    /*
+    CP_POS_X,
     CP_NEG_X,
     CP_POS_Y,
     CP_NEG_Y,
-    CP_NEAR_Z,
-    CP_FAR_Z,
+    */
     CP_END
 };
 
 static int inline get_clipped_vertices_and_deltas(const vec4s *vecs, enum clip_plane_type type, float *deltas) {
     switch (type) {
+    /*
     case CP_POS_X:
         deltas[0] = vecs[0].x - vecs[0].w;
         deltas[1] = vecs[1].x - vecs[1].w;
@@ -266,6 +269,7 @@ static int inline get_clipped_vertices_and_deltas(const vec4s *vecs, enum clip_p
         deltas[1] = vecs[1].y - -vecs[1].w;
         deltas[2] = vecs[2].y - -vecs[2].w;
         return (vecs[0].y <= -vecs[0].w) * 1 + (vecs[1].y <= -vecs[1].w) * 2 + (vecs[2].y <= -vecs[2].w) * 4;
+    */
     case CP_NEAR_Z: {
         deltas[0] = vecs[0].z - -vecs[0].w;
         deltas[1] = vecs[1].z - -vecs[1].w;
@@ -326,21 +330,12 @@ void clip_triangle(struct renderer *r,
     struct vec3_clips *cur_normals = &normal_clips_0;
     struct vec3_clips *next_normals = &normal_clips_1;
 
-    /*
-    for (int i = 0; i < 3; i++) {
-        vec4_clips_append(cur, vecs[i]);
-        vec2_clips_append(cur_texcoords, texcoords[i]);
-        vec3_clips_append(cur_worldcoords, worldcoords[i]);
-        vec3_clips_append(cur_normals, normals[i]);
-    }
-    */
-
     vec4_clips_append3(cur, vecs);
     vec2_clips_append3(cur_texcoords, texcoords);
     vec3_clips_append3(cur_worldcoords, worldcoords);
     vec3_clips_append3(cur_normals, normals);
 
-    for (enum clip_plane_type type = CP_POS_X; type < CP_END; type++) {
+    for (enum clip_plane_type type = CP_NEAR_Z; type < CP_END; type++) {
         for (int i = 0; i < cur->count; i += 3) {
             vec4s *vecs = cur->buf + i;
             vec2s *uvs = cur_texcoords->buf + i;
@@ -694,6 +689,7 @@ void renderer_rasterize(struct renderer *r/*,
             continue;
         }
 
+
         float xmin = min(min(x0, x1), x2);
         float xmax = max(max(x0, x1), x2);
         float ymin = min(min(y0, y1), y2);
@@ -703,6 +699,11 @@ void renderer_rasterize(struct renderer *r/*,
         int xmax_i = (int)ceilf(xmax);
         int ymin_i = (int)floorf(ymin);
         int ymax_i = (int)ceilf(ymax);
+
+        ymin_i = max(0, ymin_i);
+        ymax_i = min(r->height - 1, ymax_i);
+        xmin_i = max(0, xmin_i);
+        xmax_i = min(r->width - 1, xmax_i);
 
         float A0 = y0 - y1;
         float B0 = x1 - x0;
@@ -752,15 +753,6 @@ void renderer_rasterize(struct renderer *r/*,
             for (int x = xmin_i; x <= xmax_i; x++) {
                 if (E0 <= 0.01f && E1 <= 0.01f && E2 <= 0.01f) {
                     int px_idx = y * r->width + x;
-                    //TODO this is a bit of a hack since computation is off by a pixel sometimes
-                    if (!(px_idx < r->width * r->height)) {
-                        //printf("px_idx too big! x: %d, y: %d\n", x, y);
-                        continue;
-                    }
-                    if (px_idx < 0) {
-                        //printf("px_idx too small! x: %d, y: %d\n", x, y);
-                        continue;
-                    }
                     assert(px_idx < r->width * r->height);
 
                     float px = x + 0.5f;
@@ -804,12 +796,11 @@ void renderer_rasterize(struct renderer *r/*,
                         unsigned char green = texture->data[off + 1];
                         unsigned char blue = texture->data[off + 2];
 
-
-                        vec3s obj_color = { (float) red/255.0f, (float) green/255.0f, (float) blue/255.0f };
+                        vec3s obj_color = { (float) red, (float) green, (float) blue };
                         vec3s result = glms_vec3_mul(sums, obj_color);
-                        red = (unsigned char) (result.x * 255.0f);
-                        green = (unsigned char) (result.y * 255.0f);
-                        blue = (unsigned char) (result.z * 255.0f);
+                        red = (unsigned char) (result.x);
+                        green = (unsigned char) (result.y);
+                        blue = (unsigned char) (result.z);
 
 
                         //TODO test lighting here

@@ -78,8 +78,8 @@ void scene_init(struct scene *s, enum scene_type type, struct gkab_arena *arena)
         break;
     case ST_TEXTURE:
         camera_view(&s->camera, (vec3s) { 0.0f, 0.0f, 12.0f }, (vec3s) { 0.0f, 0.0f, 0.0f });
-        for (int i = 0; i < 8; i++) {
-            model_load(&s->as.texture.models[i], "cube.obj", "color.png", glm_rad(0.0f), false, (vec3s) { 2.0f, 2.0f, 2.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
+        for (int i = 0; i < 1; i++) {
+            model_load(&s->as.texture.models[i], "cube.obj", "color.png", glm_rad(0.0f), false, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
         }
         break;
     case ST_MARS: {
@@ -149,7 +149,7 @@ void scene_init(struct scene *s, enum scene_type type, struct gkab_arena *arena)
         struct gkab_arena arena;
         gkab_arena_init(&arena);
 
-        model_unit_sphere(&s->as.mars.model, 0.0f, (vec3s) { 3.0f, 3.0f, 3.0f }, (vec3s) { 0.0f, 0.0f, 0.0f }, &arena);
+        model_unit_sphere(&s->as.mars.model, 0.0f, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f }, &arena);
         s->as.mars.model.texture = texture;
 
         float rad = M_PI / 4.0f + M_PI;
@@ -263,6 +263,7 @@ void scene_draw(struct scene *s, struct renderer *r, float rads) {
         break;
     }
     case ST_TEXTURE: {
+        /*
         float xs[4] = { -2.0f, 2.0f, -2.0f, 2.0f };
         float ys[4] = { 2.0f, 2.0f, -2.0f, -2.0f };
         float zs[8] = { 0.0f, 0.0f, 0.0f, 0.0f, -16.0f, -16.0f, -16.0f, -16.0f };
@@ -284,6 +285,21 @@ void scene_draw(struct scene *s, struct renderer *r, float rads) {
                                 s->camera.proj_view, 
                                 model_mat, rotate);
         }
+        */
+            mat4s identity = glms_mat4_identity();
+            mat4s scale = identity;
+            mat4s rotate = glms_rotate(identity, rads, (vec3s) { 1.0f, 1.0f, 0.0f });
+            mat4s translate = glms_translate(identity, (vec3s) { 0.0f, 0.0f, 0.0f });
+            mat4s model_mat = glms_mat4_mul(glms_mat4_mul(translate, rotate), scale);
+
+            submit_dynamic_mesh(r, 
+                                &s->as.model.model.positions,
+                                &s->as.model.model.texcoords,
+                                &s->as.model.model.normals,
+                                &s->as.model.model.indices,
+                                &s->as.model.model.texture,
+                                s->camera.proj_view, 
+                                model_mat, rotate);
         break;
     }
     case ST_MARS: {
@@ -365,6 +381,9 @@ int main(int argc, char **argv) {
     app_init(&g_app, window.pixels, window.surface_width, window.surface_height, "background.png");
 
     double frame_times = 0.0;
+
+    float fps[60];
+    int fps_idx = 0;
    
     float rads = 0.0f;
     enum scene_type scene_type = ST_TEAPOT;
@@ -388,10 +407,10 @@ int main(int argc, char **argv) {
             scene_init(&g_app.scene, scene_type, &g_app.arena);
         }
         if (keyboard_key('A').is_down) {
-            rads -= 0.1f;
+            rads -= 5.0f * dt;
         }
         if (keyboard_key('D').is_down) {
-            rads += 0.1f;
+            rads += 5.0f * dt;
         }
 
         scene_update(&g_app.scene);
@@ -404,9 +423,17 @@ int main(int argc, char **argv) {
 
         ui_begin(&g_app.ui);
         ui_set_color(&g_app.ui, CL_BLACK);
-        char buf[16];
-        //sprintf(buf, "%d TRIANGLES", g_app.model.indices.positions.count / 3);
-        //ui_draw_text(&g_app.ui, buf, (struct cell) { 16, 8 });
+
+        fps[fps_idx] = 1.0 / dt / 60.0f;
+        fps_idx = (fps_idx + 1) % 60;
+        float avg_fps = 0.0f;
+        for (int i = 0; i < 60; i++) {
+            avg_fps += fps[i];
+        }
+
+        char buf[32];
+        sprintf(buf, "FPS: %d", (int) avg_fps);
+        ui_draw_text(&g_app.ui, buf, (struct cell) { 16, 8 });
         ui_draw_text(&g_app.ui, "LEFT / RIGHT ARROWS: ROTATE MODEL", (struct cell) { 32, 8 });
         ui_draw_text(&g_app.ui, "UP / DOWN ARROWS: CHANGE SCENE", (struct cell) { 48, 8 });
 
@@ -416,9 +443,11 @@ int main(int argc, char **argv) {
         double frameTime = after - now;
         double remaining = target - frameTime;
 
+        /*
         if (remaining > 0) {
             window_sleep(remaining * 1000.0);
         }
+        */
     }
 
     window_free(&window);
@@ -476,50 +505,11 @@ void next_scene(void) {
 }
 
 void prev_scene(void) {
-    g_scene_type = max(g_scene_type - 1, ST_TEAPOT);
+    g_scene_type = g_scene_type == ST_TEAPOT ? ST_TEAPOT : g_scene_type - 1;
     gkab_arena_reset(&g_app.arena);
     scene_init(&g_app.scene, g_scene_type, &g_app.arena);
 }
 
-/*
-void increment_model_idx(void) {
-    g_app.model_idx = min(g_app.model_idx + 1, 2);
-    gkab_arena_reset(&g_app.arena);
-    switch (g_app.model_idx) {
-    case 0:
-        model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
-        break;
-    case 1:
-        model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
-        break;
-    case 2:
-        model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 10.0f, -20.0f }, &g_app.arena);
-        break;
-    default:
-        assert(false);
-        break;
-    }
-}
-
-void decrement_model_idx(void) {
-    g_app.model_idx = max(g_app.model_idx - 1, 0);
-    gkab_arena_reset(&g_app.arena);
-    switch (g_app.model_idx) {
-    case 0:
-        model_load(&g_app.model, "teapot.obj", "grey.png", glm_rad(0.0f), false, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
-        break;
-    case 1:
-        model_load(&g_app.model, "cessna.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.3f, 0.3f, 0.3f },  (vec3s) { 0.0f, 0.0f, 0.0f }, &g_app.arena);
-        break;
-    case 2:
-        model_load(&g_app.model, "minicooper.obj", "grey.png", glm_rad(0.0f), true, (vec3s) { 0.05f, 0.05f, 0.05f },  (vec3s) { 0.0f, 10.0f, -20.0f }, &g_app.arena);
-        break;
-    default:
-        assert(false);
-        break;
-    }
-}
-*/
 
 static void wasm_frame(void) {
     if (g_left) {
@@ -533,34 +523,13 @@ static void wasm_frame(void) {
 
     scene_draw(&g_app.scene, &g_app.renderer, g_rads);
 
-    /*
-    mat4s identity = glms_mat4_identity();
-    mat4s scale = identity;
-    mat4s rotate = glms_rotate(identity, g_rads, (vec3s) { 1.0f, 1.0f, 0.0f });
-    mat4s translate = glms_translate(identity, (vec3s) { 0.0f, 0.0f, 0.0f });
-    mat4s model_mat = glms_mat4_mul(glms_mat4_mul(translate, rotate), scale);
-
-    submit_dynamic_mesh(&g_app.renderer, 
-                        &g_app.model.positions,
-                        &g_app.model.texcoords,
-                        &g_app.model.normals,
-                        &g_app.model.indices,
-                        &g_app.model.texture,
-                        g_app.camera.proj_view, 
-                        model_mat, rotate);
-    */
 
     renderer_rasterize(&g_app.renderer);
 
     ui_begin(&g_app.ui);
 
-    /*
-    char buf[16];
-    sprintf(buf, "%d TRIANGLES", g_app.model.indices.positions.count / 3);
-    ui_draw_text(&g_app.ui, buf, (struct cell) { 16, 8 });
-    */
-    ui_draw_text(&g_app.ui, "LEFT / RIGHT ARROWS: ROTATE MODEL", (struct cell) { 32, 8 });
-    ui_draw_text(&g_app.ui, "UP / DOWN ARROWS: CHANGE MODEL", (struct cell) { 48, 8 });
+    ui_draw_text(&g_app.ui, "A / D: ROTATE MODEL", (struct cell) { 32, 8 });
+    ui_draw_text(&g_app.ui, "W / S: CHANGE SCENE", (struct cell) { 48, 8 });
 
     js_draw_pixels(pixels, WIDTH, HEIGHT);
 }
@@ -582,22 +551,22 @@ int main(void) {
             if (e.key === "Escape") console.log("pressed escape");
         });
         document.addEventListener("keydown", e => {
-            if (e.key === "ArrowLeft") set_left(true);
+            if (e.key === "a") set_left(true);
         });
         document.addEventListener("keyup", e => {
-            if (e.key === "ArrowLeft") set_left(false);
+            if (e.key === "a") set_left(false);
         });
         document.addEventListener("keydown", e => {
-            if (e.key === "ArrowRight") set_right(true);
+            if (e.key === "d") set_right(true);
         });
         document.addEventListener("keyup", e => {
-            if (e.key === "ArrowRight") set_right(false);
+            if (e.key === "d") set_right(false);
         });
         document.addEventListener("keydown", e => {
-            if (e.key === "ArrowUp") next_scene();
+            if (e.key === "w") next_scene();
         });
         document.addEventListener("keydown", e => {
-            if (e.key === "ArrowDown") prev_scene();
+            if (e.key === "s") prev_scene();
         });
     });
 
