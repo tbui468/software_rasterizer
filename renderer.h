@@ -689,7 +689,19 @@ void renderer_rasterize(struct renderer *r/*,
             continue;
         }
 
+        x0 = floorf(x0 + 0.5f);
+        x1 = floorf(x1 + 0.5f);
+        x2 = floorf(x2 + 0.5f);
+        y0 = floorf(y0 + 0.5f);
+        y1 = floorf(y1 + 0.5f);
+        y2 = floorf(y2 + 0.5f);
 
+        int xmin_i = min(min(x0, x1), x2);
+        int xmax_i = max(max(x0, x1), x2);
+        int ymin_i = min(min(y0, y1), y2);
+        int ymax_i = max(max(y0, y1), y2);
+
+        /*
         float xmin = min(min(x0, x1), x2);
         float xmax = max(max(x0, x1), x2);
         float ymin = min(min(y0, y1), y2);
@@ -699,7 +711,13 @@ void renderer_rasterize(struct renderer *r/*,
         int xmax_i = (int)ceilf(xmax);
         int ymin_i = (int)floorf(ymin);
         int ymax_i = (int)ceilf(ymax);
+        int xmin_i = xmin;
+        int xmax_i = xmax;
+        int ymin_i = ymin;
+        int ymax_i = ymax;
+        */
 
+        //clip bounding box against top/bottom/left/right planes in frustum
         ymin_i = max(0, ymin_i);
         ymax_i = min(r->height - 1, ymax_i);
         xmin_i = max(0, xmin_i);

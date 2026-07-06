@@ -407,10 +407,10 @@ int main(int argc, char **argv) {
             scene_init(&g_app.scene, scene_type, &g_app.arena);
         }
         if (keyboard_key('A').is_down) {
-            rads -= 5.0f * dt;
+            rads -= 3.0f * dt;
         }
         if (keyboard_key('D').is_down) {
-            rads += 5.0f * dt;
+            rads += 3.0f * dt;
         }
 
         scene_update(&g_app.scene);

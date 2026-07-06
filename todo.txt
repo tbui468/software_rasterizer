@@ -2,18 +2,12 @@ Use this
     https://somethingaboutmaps.wordpress.com/an-inventory-of-martian-hypsometric-tints/
     https://somethingaboutmaps.com/
 
+
 Clean up directory structure
     put src into separate folder
     put assets into a separate folder
     put build artifacts + binaries in a separate folder
     make a proper README.md
-
-commit
-
-Using a unit cube 4x in size makes seams between triangles very clear when rotating around xy axis
-    Use this as test case to fix bug
-    look at Pineda's paper for more details on how he solved this
-        major point seems to be ensuring the starting/ending points of the triangle start on the same pixel after rounding
 
 commit
 
