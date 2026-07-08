@@ -1,7 +1,3 @@
-Use this 
-    https://somethingaboutmaps.wordpress.com/an-inventory-of-martian-hypsometric-tints/
-    https://somethingaboutmaps.com/
-
 Baked Lighting
     ambient lighting
     point light

@@ -21,6 +21,7 @@ GKAB_MAKE_ARRAY(clips, struct raster_vertex);
 
 struct renderer {
     float *depths;
+    float *centers;
     struct gkab_arena arena;
     struct gkab_arena frame_arena;
     struct clips clips;
@@ -47,6 +48,7 @@ void renderer_init(struct renderer *r, uint32_t *pixels, int width, int height) 
     clips_init(&r->clips, &r->arena);
 
     r->depths = gkab_arena_malloc(&r->arena, sizeof(float) * width * height);
+    r->centers = gkab_arena_malloc(&r->arena, sizeof(float) * width * height);
 
     gkab_arena_init(&r->frame_arena);
     
@@ -689,12 +691,12 @@ void renderer_rasterize(struct renderer *r/*,
             continue;
         }
 
-        x0 = floorf(x0 + 0.5f);
-        x1 = floorf(x1 + 0.5f);
-        x2 = floorf(x2 + 0.5f);
-        y0 = floorf(y0 + 0.5f);
-        y1 = floorf(y1 + 0.5f);
-        y2 = floorf(y2 + 0.5f);
+        x0 = floorf(x0);
+        x1 = floorf(x1);
+        x2 = floorf(x2);
+        y0 = floorf(y0);
+        y1 = floorf(y1);
+        y2 = floorf(y2);
 
         int xmin_i = min(min(x0, x1), x2);
         int xmax_i = max(max(x0, x1), x2);
@@ -735,9 +737,13 @@ void renderer_rasterize(struct renderer *r/*,
         float B2 = x0 - x2;
         float C2 = x2 * y0 - x0 * y2;
         
-        float E0_row = A0 * (xmin_i + 0.5f) + B0 * (ymin_i + 0.5f) + C0;
-        float E1_row = A1 * (xmin_i + 0.5f) + B1 * (ymin_i + 0.5f) + C1;
-        float E2_row = A2 * (xmin_i + 0.5f) + B2 * (ymin_i + 0.5f) + C2;
+        //float E0_row = A0 * (xmin_i + 0.5f) + B0 * (ymin_i + 0.5f) + C0;
+        //float E1_row = A1 * (xmin_i + 0.5f) + B1 * (ymin_i + 0.5f) + C1;
+        //float E2_row = A2 * (xmin_i + 0.5f) + B2 * (ymin_i + 0.5f) + C2;
+
+        float E0_row = A0 * (xmin_i) + B0 * (ymin_i) + C0;
+        float E1_row = A1 * (xmin_i) + B1 * (ymin_i) + C1;
+        float E2_row = A2 * (xmin_i) + B2 * (ymin_i) + C2;
 
 
         //lighting for entire face computed once - flat lighting
@@ -763,6 +769,10 @@ void renderer_rasterize(struct renderer *r/*,
         */
         //end light
 
+        float in_center = z0 * inv_w0 * (1.0 / 3.0f) + z1 * inv_w1 * (1.0f / 3.0f) + z2 * inv_w2 * (1.0f / 3.0f);
+        float inv_w_center = inv_w0 * (1.0 / 3.0f) + inv_w1 * (1.0 / 3.0f) + inv_w2 * (1.0 / 3.0f);
+        float center = in_center / inv_w_center;
+
 
         for (int y = ymin_i; y <= ymax_i; y++) {
             float E0 = E0_row;
@@ -773,8 +783,8 @@ void renderer_rasterize(struct renderer *r/*,
                     int px_idx = y * r->width + x;
                     assert(px_idx < r->width * r->height);
 
-                    float px = x + 0.5f;
-                    float py = y + 0.5f;
+                    float px = x;
+                    float py = y;
 
                     float e0 = (x1 - px) * (y2 - py) - (y1 - py) * (x2 - px); // opposite v0
                     float e1 = (x2 - px) * (y0 - py) - (y2 - py) * (x0 - px); // opposite v1
@@ -790,7 +800,10 @@ void renderer_rasterize(struct renderer *r/*,
                     float inv_w = inv_w0 * b0 + inv_w1 * b1 + inv_w2 * b2;
                     float depth = indepth / inv_w;
 
-                    if (r->depths[px_idx] > depth) {
+                    bool above_threshold = fabs(r->depths[px_idx] - depth) > 0.00001f;
+
+                    //if ((!above_threshold && r->centers[px_idx] > center) || (r->depths[px_idx] > depth && above_threshold)) {
+                    if ((!above_threshold && r->centers[px_idx] - center > 0.00001f) || (r->depths[px_idx] > depth && above_threshold)) {
                         //perspective-correct textures  TODO clean this up
                         float u0_over_w = u0 * inv_w0;
                         float v0_over_w = v0 * inv_w0;
@@ -885,6 +898,7 @@ void renderer_rasterize(struct renderer *r/*,
                          
                         r->pixels[px_idx] = 0xFF000000 | (red << 16) | (green << 8) | (blue << 0);
                         r->depths[px_idx] = depth;
+                        r->centers[px_idx] = center;
                     }
                 }
 

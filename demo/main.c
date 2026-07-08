@@ -12,15 +12,21 @@
 #include "camera.h"
 #include "cglm/struct.h"
 
-#define WIDTH  (1280 * 1)
-#define HEIGHT (640 * 1)
+#define WIDTH  (320 * 1)
+#define HEIGHT (240 * 1)
+//#define WIDTH  (640 * 1)
+//#define HEIGHT (480 * 1)
+//#define WIDTH  (1280 * 1)
+//#define HEIGHT (640 * 1)
 
 enum scene_type {
     ST_TEAPOT = 0,
     ST_CESSNA,
     ST_MINICOOPER,
     ST_TEXTURE,
-    ST_MARS,
+    //ST_MARS,
+    ST_FLOOR_CUBES,
+    ST_FLOOR_TILES,
     ST_END
 };
 
@@ -39,6 +45,10 @@ struct mars_scene {
     unsigned char *colormap;
 };
 
+struct floor_cubes {
+    struct model models[9];
+};
+
 struct scene {
     enum scene_type type;
 
@@ -46,6 +56,7 @@ struct scene {
         struct model_scene model;
         struct texture_scene texture;
         struct mars_scene mars;
+        struct floor_cubes floor_cubes;
     } as;
 
     struct camera camera;
@@ -84,6 +95,7 @@ void scene_init(struct scene *s, enum scene_type type, struct gkab_arena *arena)
             model_load(&s->as.texture.models[i], "assets/cube.obj", "assets/color.png", glm_rad(0.0f), false, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
         }
         break;
+    /*
     case ST_MARS: {
         printf("init mars\n");
         uint16_t width, height;
@@ -232,6 +244,19 @@ void scene_init(struct scene *s, enum scene_type type, struct gkab_arena *arena)
         }
         break;
     }
+    */
+    case ST_FLOOR_CUBES:
+        camera_view(&s->camera, (vec3s) { 0.0f, 0.0f, 12.0f }, (vec3s) { 0.0f, 0.0f, 0.0f });
+        for (int i = 0; i < 9; i++) {
+            model_load(&s->as.floor_cubes.models[i], "assets/cube.obj", "assets/grey.png", glm_rad(0.0f), false, (vec3s) { 2.0f, 2.0f, 2.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
+        }
+        break;
+    case ST_FLOOR_TILES:
+        camera_view(&s->camera, (vec3s) { 0.0f, 0.0f, 12.0f }, (vec3s) { 0.0f, 0.0f, 0.0f });
+        for (int i = 0; i < 1; i++) {
+            model_load(&s->as.texture.models[i], "assets/cube.obj", "assets/color.png", glm_rad(0.0f), false, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
+        }
+        break;
     default:
         assert(false);
         break;
@@ -302,6 +327,7 @@ void scene_draw(struct scene *s, struct renderer *r, float rads) {
                                 model_mat, rotate);
         break;
     }
+    /*
     case ST_MARS: {
 
         mat4s identity = glms_mat4_identity();
@@ -319,6 +345,50 @@ void scene_draw(struct scene *s, struct renderer *r, float rads) {
                             s->camera.proj_view, 
                             model_mat, rotate);
 
+        break;
+    }
+    */
+    case ST_FLOOR_CUBES: {
+        float xs[4] = { -2.0f, 2.0f, -2.0f, 2.0f };
+        float ys[4] = { 2.0f, 2.0f, -2.0f, -2.0f };
+        float zs[8] = { 0.0f, 0.0f, 0.0f, 0.0f, -16.0f, -16.0f, -16.0f, -16.0f };
+       
+        camera_view(&s->camera, (vec3s) { rads, -8.0f, 12.0f }, (vec3s) { rads, 0.0f, 0.0f });
+ 
+        
+        for (int i = 0; i < 9; i++) {
+            mat4s identity = glms_mat4_identity();
+            mat4s scale = identity;
+            mat4s rotate = glms_rotate(identity, 0.0f, (vec3s) { 1.0f, 1.0f, 0.0f });
+            mat4s translate = glms_translate(identity, (vec3s) { -2.0f + (i / 3) * 2, -2.0f + (i % 3) * 2, 0.0f });
+            mat4s model_mat = glms_mat4_mul(glms_mat4_mul(translate, rotate), scale);
+
+            submit_dynamic_mesh(r, 
+                                &s->as.floor_cubes.models[i].positions,
+                                &s->as.floor_cubes.models[i].texcoords,
+                                &s->as.floor_cubes.models[i].normals,
+                                &s->as.floor_cubes.models[i].indices,
+                                &s->as.floor_cubes.models[i].texture,
+                                s->camera.proj_view, 
+                                model_mat, rotate);
+        }
+        break;
+    }
+    case ST_FLOOR_TILES: {
+            mat4s identity = glms_mat4_identity();
+            mat4s scale = identity;
+            mat4s rotate = glms_rotate(identity, rads, (vec3s) { 1.0f, 1.0f, 0.0f });
+            mat4s translate = glms_translate(identity, (vec3s) { 0.0f, 0.0f, 0.0f });
+            mat4s model_mat = glms_mat4_mul(glms_mat4_mul(translate, rotate), scale);
+
+            submit_dynamic_mesh(r, 
+                                &s->as.model.model.positions,
+                                &s->as.model.model.texcoords,
+                                &s->as.model.model.normals,
+                                &s->as.model.model.indices,
+                                &s->as.model.model.texture,
+                                s->camera.proj_view, 
+                                model_mat, rotate);
         break;
     }
     default:
