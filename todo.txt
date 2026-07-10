@@ -1,3 +1,44 @@
+Seems like the problem is related to depth buffer
+    Prescaling y in models makes no difference - this is purely a problem with 
+        projection or shading
+
+    Could the problem be with the field-of-view being too narrow, causing warping (or conversely, too wide)?
+
+    Problem is related to warping as we get closer to the left/right edges of the screen
+        Does this problem exist if the screen is square?
+
+    Drawing only two faces (2 triangles each quad)
+        One quad should stay above the other regardless of how we move camera
+        this is not occuring
+
+        print out z to see
+
+low z is on top (this makes sense since -12 is the camera location)
+To test if rounding is error, pass proje
+
+Good (top covers side)
+top
+0.992297, 0.992297, 0.992297
+0.992297, 0.992297, 0.992297
+side
+0.992993, 0.992297, 0.992297
+0.992993, 0.992993, 0.992297
+
+Bad (side covers top)
+top
+0.992450, 0.992450, 0.993743
+0.993743, 0.992450, 0.993743
+side
+0.988199, 0.986515, 0.995615
+0.995866, 0.988199, 0.995615
+
+Software rasterizer 
+    Move updated files to software raserizer (ie game project)
+    Move camera.h over (doesn't exist in that version)
+    Move window.h
+    Move ui.h
+    Model model.h
+
 Baked Lighting
     ambient lighting
     point light

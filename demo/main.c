@@ -46,7 +46,7 @@ struct mars_scene {
 };
 
 struct floor_cubes {
-    struct model models[9];
+    struct model models[8];
 };
 
 struct scene {
@@ -92,7 +92,7 @@ void scene_init(struct scene *s, enum scene_type type, struct gkab_arena *arena)
     case ST_TEXTURE:
         camera_view(&s->camera, (vec3s) { 0.0f, 0.0f, 12.0f }, (vec3s) { 0.0f, 0.0f, 0.0f });
         for (int i = 0; i < 1; i++) {
-            model_load(&s->as.texture.models[i], "assets/cube.obj", "assets/color.png", glm_rad(0.0f), false, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
+            model_load(&s->as.texture.models[i], "assets/cube_1.obj", "assets/color.png", glm_rad(0.0f), false, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
         }
         break;
     /*
@@ -247,14 +247,24 @@ void scene_init(struct scene *s, enum scene_type type, struct gkab_arena *arena)
     */
     case ST_FLOOR_CUBES:
         camera_view(&s->camera, (vec3s) { 0.0f, 0.0f, 12.0f }, (vec3s) { 0.0f, 0.0f, 0.0f });
-        for (int i = 0; i < 9; i++) {
-            model_load(&s->as.floor_cubes.models[i], "assets/cube.obj", "assets/grey.png", glm_rad(0.0f), false, (vec3s) { 2.0f, 2.0f, 2.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
+        const char *files[8] = {
+            "assets/cube_5.obj",
+            "assets/cube_8.obj",
+            "assets/cube_3.obj",
+            "assets/cube_8.obj",
+            "assets/cube_5.obj",
+            "assets/cube_8.obj",
+            "assets/cube_8.obj",
+            "assets/cube_8.obj"
+        };
+        for (int i = 0; i < 8; i++) {
+            model_load(&s->as.floor_cubes.models[i], files[i], "assets/color.png", glm_rad(0.0f), false, (vec3s) { 1.0f, 1.0f, 1.0f }, (vec3s) { 2.0f, 0.0f, 0.0f },  arena);
         }
         break;
     case ST_FLOOR_TILES:
         camera_view(&s->camera, (vec3s) { 0.0f, 0.0f, 12.0f }, (vec3s) { 0.0f, 0.0f, 0.0f });
         for (int i = 0; i < 1; i++) {
-            model_load(&s->as.texture.models[i], "assets/cube.obj", "assets/color.png", glm_rad(0.0f), false, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
+            model_load(&s->as.texture.models[i], "assets/cube_1.obj", "assets/color.png", glm_rad(0.0f), false, (vec3s) { 4.0f, 4.0f, 4.0f }, (vec3s) { 0.0f, 0.0f, 0.0f },  arena);
         }
         break;
     default:
@@ -349,18 +359,15 @@ void scene_draw(struct scene *s, struct renderer *r, float rads) {
     }
     */
     case ST_FLOOR_CUBES: {
-        float xs[4] = { -2.0f, 2.0f, -2.0f, 2.0f };
-        float ys[4] = { 2.0f, 2.0f, -2.0f, -2.0f };
-        float zs[8] = { 0.0f, 0.0f, 0.0f, 0.0f, -16.0f, -16.0f, -16.0f, -16.0f };
        
-        camera_view(&s->camera, (vec3s) { rads, -8.0f, 12.0f }, (vec3s) { rads, 0.0f, 0.0f });
+        camera_view(&s->camera, (vec3s) { 0.0f, rads, 6.0f }, (vec3s) { 0.0f, 0.0f, 0.0f });
  
         
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 2; i++) {
             mat4s identity = glms_mat4_identity();
             mat4s scale = identity;
             mat4s rotate = glms_rotate(identity, 0.0f, (vec3s) { 1.0f, 1.0f, 0.0f });
-            mat4s translate = glms_translate(identity, (vec3s) { -2.0f + (i / 3) * 2, -2.0f + (i % 3) * 2, 0.0f });
+            mat4s translate = glms_translate(identity, (vec3s) { i, 0.0f, 0.0f });
             mat4s model_mat = glms_mat4_mul(glms_mat4_mul(translate, rotate), scale);
 
             submit_dynamic_mesh(r, 

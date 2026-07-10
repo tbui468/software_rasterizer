@@ -69,7 +69,7 @@ void renderer_begin_frame(struct renderer *r, unsigned char *clear_data) {
     memcpy(r->pixels, clear_data, r->width * r->height * 4);
 
     for (int i = 0; i < r->width * r->height; i++) {
-        r->depths[i] = 1.0f;
+        r->depths[i] = 0.0f;
     }
 }
 
@@ -528,7 +528,7 @@ void submit_dynamic_mesh(struct renderer *r,
     }
 
     for (int i = 0; i < normals->count; i++) {
-        vec4s n = { normals->values[i].x, normals->values[i].y, normals->values[i].z, 1.0f };
+        vec4s n = { normals->values[i].x, normals->values[i].y, normals->values[i].z, 0.0f };
         vec4s rotated_n = glms_mat4_mulv(rotate, n);
         vec3_array_append(&transformed_normals, (vec3s) { rotated_n.x, rotated_n.y, rotated_n.z });
     }
@@ -657,6 +657,12 @@ void renderer_rasterize(struct renderer *r/*,
                         vec3s world_spotlight_pos*/) {
     assert(r->clips.count % 3 == 0);
 
+    static int frame = 0;
+    const int delta = 4096;
+    frame++;
+
+    if (frame % delta == 0) printf("\n");
+
 
     for (int i = 0; i < r->clips.count; i += 3) {
         float x0 =  r->clips.values[i].pos.x;
@@ -679,6 +685,9 @@ void renderer_rasterize(struct renderer *r/*,
         float v1 = r->clips.values[i + 1].tex.v;
         float v2 = r->clips.values[i + 2].tex.v;
         struct texture *texture = r->clips.values[i].texture; //Note should be the same for all 3 positions
+
+        if (frame % delta == 0)
+            printf("%f, %f, %f\n", z0, z1, z2);
 
 
         //orientation test (ccw if area > 0)
@@ -796,14 +805,16 @@ void renderer_rasterize(struct renderer *r/*,
                     float b2 = e2 / area;
 
                     //perspective-correct depth TODO clean this up
-                    float indepth = z0 * inv_w0 * b0 + z1 * inv_w1 * b1 + z2 * inv_w2 * b2;
-                    float inv_w = inv_w0 * b0 + inv_w1 * b1 + inv_w2 * b2;
+                    //double indepth = z0 * inv_w0 * b0 + z1 * inv_w1 * b1 + z2 * inv_w2 * b2;
+                    double indepth = z0 * b0 + z1 * b1 + z2 * b2;
+                    double inv_w = inv_w0 * b0 + inv_w1 * b1 + inv_w2 * b2;
                     float depth = indepth / inv_w;
+                    depth = 1.0f / depth;
 
-                    bool above_threshold = fabs(r->depths[px_idx] - depth) > 0.00001f;
+                    bool above_threshold = fabs(r->depths[px_idx] - depth) > 0.0001f;
 
-                    //if ((!above_threshold && r->centers[px_idx] > center) || (r->depths[px_idx] > depth && above_threshold)) {
-                    if ((!above_threshold && r->centers[px_idx] - center > 0.00001f) || (r->depths[px_idx] > depth && above_threshold)) {
+                    if ((!above_threshold && r->centers[px_idx] - center > -0.0001f) || (r->depths[px_idx] < depth && above_threshold)) {
+                    //if (r->depths[px_idx] < depth) {
                         //perspective-correct textures  TODO clean this up
                         float u0_over_w = u0 * inv_w0;
                         float v0_over_w = v0 * inv_w0;
